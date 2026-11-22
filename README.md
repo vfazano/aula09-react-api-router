@@ -52,19 +52,16 @@ Os resumos da página de integração são obtidos da Wikipedia em português: <
 
 ## Configuração da Vercel
 
-Adicione `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` nas variáveis de ambiente do projeto na Vercel e faça um novo deploy. Use somente a chave publicável/anon; as políticas RLS de `supabase/schema.sql` protegem a tabela. Sem essas variáveis, o mural informa que ainda não está configurado e o formulário fica desabilitado.
+Adicione `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` nas variáveis de ambiente de produção da Vercel e faça um novo deploy. Use somente a chave **Publishable** (ou anon, em projetos com chaves legadas). Nunca use `secret` ou `service_role` em variáveis `VITE_`: valores com esse prefixo são incluídos no JavaScript enviado ao navegador.
 
-## Publicar no GitHub e na Vercel
+As variáveis de produção já estão configuradas para o mural compartilhado. Sem essas variáveis, o mural informa que ainda não está configurado e o formulário fica desabilitado.
 
-Crie um repositório público para esta pasta e envie os arquivos:
+## Repositório e publicação
 
-```bash
-git init
-git add .
-git commit -m "Cria landing page de jogos para a Aula 09"
-git branch -M main
-git remote add origin https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git
-git push -u origin main
-```
+- GitHub: <https://github.com/vfazano/aula09-react-api-router>
+- Aplicação: <https://aula09-react-api-router.vercel.app/>
+- Mural: <https://aula09-react-api-router.vercel.app/comunidade>
 
-Na Vercel, importe o repositório e configure `aula09-react-api-router` como **Root Directory** se estiver publicando a partir do repositório principal com várias aulas. O comando de build é `npm run build` e a pasta de saída é `dist`. O arquivo `vercel.json` encaminha URLs das páginas React Router para a aplicação. Não há URL de repositório ou deploy preenchida, pois essas ações dependem da sua conta.
+O repositório já está conectado à Vercel; alterações enviadas à branch `main` podem gerar um novo deploy. Como este repositório contém somente a Aula 09, use a raiz (`.`) como **Root Directory**. O comando de build é `npm run build`, a pasta de saída é `dist` e `vercel.json` encaminha as URLs do React Router para a aplicação.
+
+Veja também o [relatório de entrega da Aula 09](./RELATORIO-AULA09.md), com o resumo das funcionalidades, integrações e validações.
