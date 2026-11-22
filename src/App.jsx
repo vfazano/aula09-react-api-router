@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, useParams } from 'react-router-dom';
+import { supabase } from './lib/supabase.js';
 import gtaCard from '../Img GTA VI/Grand Theft Auto VI img card.avif';
 import gtaBackdrop from '../Img GTA VI/Grand Theft Auto VI img fundo.avif';
 import gtaGame from '../Img GTA VI/Grand Theft Auto VI img game.jpg';
@@ -336,8 +337,44 @@ function GamesPage({ savedGames, onToggleSave }) {
 function CommunityPage() {
   const [values, setValues] = useState({ game: '', reason: '' });
   const [suggestions, setSuggestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSuggestions() {
+      if (!supabase) {
+        setLoadError('O mural compartilhado ainda não está configurado.');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error: requestError } = await supabase
+          .from('game_suggestions')
+          .select('id, game, reason, created_at')
+          .order('created_at', { ascending: false });
+
+        if (requestError) throw requestError;
+        if (isMounted) setSuggestions(data ?? []);
+      } catch (requestError) {
+        if (isMounted) {
+          setLoadError(requestError.message || 'Não foi possível carregar o mural.');
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    loadSuggestions();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function updateField(event) {
     setValues((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -345,10 +382,14 @@ function CommunityPage() {
     setFeedback('');
   }
 
-  function submitSuggestion(event) {
+  async function submitSuggestion(event) {
     event.preventDefault();
     const game = values.game.trim();
     const reason = values.reason.trim();
+    if (!supabase) {
+      setError('O mural compartilhado ainda não está configurado.');
+      return;
+    }
     if (game.length < 2) {
       setError('O nome do jogo precisa ter pelo menos 2 caracteres.');
       return;
@@ -357,13 +398,26 @@ function CommunityPage() {
       setError('Conte um pouco mais: escreva pelo menos 10 caracteres.');
       return;
     }
-    setSuggestions((current) => [
-      { id: crypto.randomUUID(), game, reason },
-      ...current,
-    ]);
-    setValues({ game: '', reason: '' });
+
+    setIsSubmitting(true);
     setError('');
-    setFeedback('Sugestão adicionada à lista desta sessão.');
+    setFeedback('');
+    try {
+      const { data, error: requestError } = await supabase
+        .from('game_suggestions')
+        .insert({ game, reason })
+        .select('id, game, reason, created_at')
+        .single();
+
+      if (requestError) throw requestError;
+      setSuggestions((current) => [data, ...current]);
+      setValues({ game: '', reason: '' });
+      setFeedback('Sugestão publicada no mural para todos os visitantes.');
+    } catch (requestError) {
+      setError(requestError.message || 'Não foi possível publicar sua sugestão.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -378,23 +432,31 @@ function CommunityPage() {
           <form className="suggestion-form" onSubmit={submitSuggestion} noValidate>
             <p className="eyebrow">SUA PRÓXIMA RECOMENDAÇÃO</p>
             <label htmlFor="game">Nome do jogo</label>
-            <input id="game" name="game" value={values.game} onChange={updateField} minLength="2" required placeholder="Ex.: um jogo que você recomenda" />
+            <input id="game" name="game" value={values.game} onChange={updateField} minLength="2" maxLength="80" required placeholder="Ex.: um jogo que você recomenda" />
             <label htmlFor="reason">Por que você recomenda?</label>
-            <textarea id="reason" name="reason" value={values.reason} onChange={updateField} minLength="10" required rows="4" placeholder="O que faz esse jogo especial para você?" />
+            <textarea id="reason" name="reason" value={values.reason} onChange={updateField} minLength="10" maxLength="500" required rows="4" placeholder="O que faz esse jogo especial para você?" />
             {error && <p className="form-message form-error" role="alert">{error}</p>}
             {feedback && <p className="form-message form-success" role="status">{feedback}</p>}
-            <button type="submit" className="button button-primary">Enviar sugestão <span>↗</span></button>
-            <p className="form-note">As sugestões ficam no estado desta página e não são enviadas a um servidor.</p>
+            <button type="submit" className="button button-primary" disabled={!supabase || isSubmitting}>
+              {isSubmitting ? 'Publicando...' : 'Enviar sugestão'} <span>↗</span>
+            </button>
+            <p className="form-note">
+              {supabase
+                ? 'As sugestões publicadas ficam visíveis para todos os visitantes.'
+                : 'Configure o Supabase para habilitar o mural compartilhado.'}
+            </p>
           </form>
           <section className="suggestion-list" aria-live="polite">
-            <div className="list-heading"><div><p className="eyebrow">MURAL DA SESSÃO</p><h2>Na conversa <span>({suggestions.length})</span></h2></div></div>
-            {suggestions.length
+            <div className="list-heading"><div><p className="eyebrow">MURAL DA COMUNIDADE</p><h2>Na conversa <span>({suggestions.length})</span></h2></div></div>
+            {isLoading && <p className="state-message" role="status">Carregando recomendações...</p>}
+            {loadError && <p className="state-message state-error" role="alert">{loadError}</p>}
+            {!isLoading && !loadError && suggestions.length > 0
               ? suggestions.map((suggestion) => (
                 <article className="suggestion-card" key={suggestion.id}>
                   <span className="suggestion-icon">↗</span><div><h3>{suggestion.game}</h3><p>{suggestion.reason}</p></div>
                 </article>
               ))
-              : <p className="empty-state">O mural está esperando a primeira recomendação.</p>}
+              : !isLoading && !loadError && <p className="empty-state">O mural está esperando a primeira recomendação.</p>}
           </section>
         </div>
       </main>

@@ -162,6 +162,7 @@ a { color: inherit; }
 .suggestion-form input:focus, .suggestion-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px #ff554d1c; }
 .suggestion-form input::placeholder, .suggestion-form textarea::placeholder { color: #6e6a73; }
 .suggestion-form .button { margin-top: 18px; }
+.suggestion-form .button:disabled { opacity: .55; cursor: not-allowed; }
 .form-note { margin: 13px 0 0; color: #77737c; font-size: 9px; line-height: 1.6; }
 .form-message { font-size: 10px; line-height: 1.6; }
 .form-error { color: #ff8c83; }

@@ -1,4 +1,5 @@
 node_modules/
 dist/
 .env*
+!.env.example
 Img GTA VI/Postman Agent v0.5.4 (x64).exe
