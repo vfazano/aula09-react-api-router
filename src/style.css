@@ -183,6 +183,8 @@ a { color: inherit; }
 .post-card > span { color: var(--accent); font: 8px var(--mono); letter-spacing: .1em; }
 .post-card h2 { margin: 15px 0 8px; font: 600 16px/1.2 var(--display); text-transform: capitalize; }
 .post-card p { margin: 0; color: #aaa7ae; font-size: 10px; line-height: 1.7; }
+.post-card a { display: inline-block; margin-top: 12px; color: var(--accent); font: 8px var(--mono); text-decoration: none; }
+.post-card a:hover { color: #fff; }
 .state-message { padding: 22px 0; color: #aaa7ae; font-size: 11px; }
 .state-error { color: #ff8c83; }
 .not-found { min-height: calc(100vh - 154px); padding-top: 100px; padding-bottom: 100px; }

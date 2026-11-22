@@ -24,7 +24,7 @@ npm run preview
 - `/jogos`: catálogo com filtros por gênero, fotos e botões para adicionar/remover jogos da lista da sessão.
 - `/jogos/:id`: página individual de cada jogo, com apresentação, lembrança pessoal e galeria quando há imagens disponíveis.
 - `/comunidade`: formulário controlado para recomendações, com validação e estado local.
-- `/api`: consulta a `https://jsonplaceholder.typicode.com/posts?_limit=6`, incluindo estados de carregamento, erro e sucesso. Os textos retornados são dados de demonstração e não representam informações sobre os jogos.
+- `/api`: consulta a API da Wikipedia em português para mostrar resumos dos cinco jogos, com estados de carregamento, erro e lista vazia e links para as fontes.
 
 ## Conceitos da aula
 
@@ -33,17 +33,17 @@ npm run preview
 - **State / `useState`:** filtros, lista de jogos salvos, campos do formulário, sugestões e respostas da API atualizam a interface.
 - **Formulário e validação:** nome do jogo e recomendação são validados antes de aparecerem no mural da sessão.
 - **`useEffect`:** busca dados da API ao abrir `/api` e cancela a requisição se a página for desmontada.
-- **API:** a página `/api` trata resposta HTTP inválida e apresenta o erro sem confundir os dados de exemplo com conteúdo editorial.
+- **API:** a página `/api` consulta a API pública da Wikipedia (`GET https://pt.wikipedia.org/w/api.php`) para obter informações relacionadas aos jogos. Não é necessária chave de API; falhas HTTP, carregamento e lista vazia são tratados na interface.
 - **React Router:** `BrowserRouter`, `Routes`, `Route`, `Link` e `NavLink` permitem navegação pelas URLs da aplicação.
 - **Páginas dos jogos:** os cards abrem páginas individuais; as imagens são importadas das pastas locais de cada jogo e não alteram a integração com a API.
-- **Listas e keys:** jogos, filtros, recomendações e publicações são renderizados com `map()` e IDs estáveis.
+- **Listas e keys:** jogos, filtros, recomendações e resumos externos são renderizados com `map()` e IDs estáveis.
 - **Renderização condicional:** estados da API, mural vazio, filtros e jogos salvos apresentam conteúdos diferentes conforme o estado.
 
 ## Créditos e direitos
 
 Os nomes dos jogos e franquias pertencem aos respectivos titulares: Rockstar Games (Grand Theft Auto), Sony Interactive Entertainment (God of War), CD PROJEKT (The Witcher), Activision (Guitar Hero) e Ubisoft (Assassin's Creed). Este é um projeto acadêmico independente, sem afiliação ou endosso. As imagens dos jogos são arquivos locais fornecidos para este projeto.
 
-JSONPlaceholder fornece os dados fictícios da demonstração da API: <https://jsonplaceholder.typicode.com/>.
+Os resumos da página de integração são obtidos da Wikipedia em português: <https://pt.wikipedia.org/>.
 
 ## Publicar no GitHub e na Vercel
 

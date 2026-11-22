@@ -21,6 +21,7 @@ const games = [
     number: '01',
     title: 'Grand Theft Auto VI',
     shortTitle: 'GTA VI',
+    wikiSearch: 'Grand Theft Auto VI',
     category: 'Aventura · Mundo aberto',
     description: 'Uma nova viagem por Vice City e pelo estado de Leonida.',
     theme: 'vice',
@@ -38,6 +39,7 @@ const games = [
     number: '02',
     title: 'God of War — Trilogia',
     shortTitle: 'God of War',
+    wikiSearch: 'God of War (trilogia)',
     category: 'Ação · Mitologia',
     description: 'Uma jornada intensa entre deuses, escolhas e legado.',
     theme: 'ashes',
@@ -55,6 +57,7 @@ const games = [
     number: '03',
     title: 'The Witcher 3: Wild Hunt',
     shortTitle: 'The Witcher 3',
+    wikiSearch: 'The Witcher 3 Wild Hunt',
     category: 'RPG · Fantasia',
     description: 'Geralt enfrenta monstros e escolhas em uma aventura de fantasia.',
     theme: 'wild',
@@ -73,6 +76,7 @@ const games = [
     number: '04',
     title: 'Guitar Hero: Warriors of Rock',
     shortTitle: 'Guitar Hero',
+    wikiSearch: 'Guitar Hero Warriors of Rock',
     category: 'Ritmo · Música',
     description: 'Suba ao palco, acompanhe o ritmo e faça o seu show.',
     theme: 'neon',
@@ -87,6 +91,7 @@ const games = [
     number: '05',
     title: "Assassin's Creed IV: Black Flag",
     shortTitle: 'Black Flag',
+    wikiSearch: 'Assassins Creed IV Black Flag',
     category: 'Ação · Aventura',
     description: 'Uma aventura de piratas, exploração e batalhas navais.',
     theme: 'ocean',
@@ -398,20 +403,48 @@ function CommunityPage() {
 }
 
 function ApiPage() {
-  const [posts, setPosts] = useState([]);
+  const [summaries, setSummaries] = useState([]);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
-    async function loadPosts() {
+    async function loadGameSummaries() {
       setStatus('loading');
       setError('');
       try {
-        const response = await fetch('https://jsonplaceholder.typicode.com/posts?_limit=6', { signal: controller.signal });
-        if (!response.ok) throw new Error(`A API respondeu com HTTP ${response.status}.`);
-        const data = await response.json();
-        setPosts(data);
+        const responses = await Promise.all(games.map((game) => {
+          const params = new URLSearchParams({
+            action: 'query',
+            generator: 'search',
+            gsrsearch: game.wikiSearch,
+            gsrlimit: '1',
+            prop: 'extracts',
+            exintro: '1',
+            explaintext: '1',
+            exchars: '600',
+            format: 'json',
+            origin: '*',
+          });
+          return fetch(`https://pt.wikipedia.org/w/api.php?${params}`, { signal: controller.signal });
+        }));
+        const results = await Promise.all(responses.map(async (response, index) => {
+          if (!response.ok) {
+            throw new Error(`A Wikipedia respondeu com HTTP ${response.status}.`);
+          }
+          const data = await response.json();
+          const page = Object.values(data.query?.pages || {})[0];
+          if (!page?.extract) return null;
+          return {
+            id: games[index].id,
+            gameTitle: games[index].shortTitle,
+            title: games[index].title,
+            extract: page.extract,
+            pageId: page.pageid,
+            sourceTitle: page.title,
+          };
+        }));
+        setSummaries(results.filter(Boolean));
         setStatus('ready');
       } catch (requestError) {
         if (requestError.name !== 'AbortError') {
@@ -420,7 +453,7 @@ function ApiPage() {
         }
       }
     }
-    loadPosts();
+    loadGameSummaries();
     return () => controller.abort();
   }, []);
 
@@ -430,23 +463,30 @@ function ApiPage() {
         <div className="page-intro">
           <p className="eyebrow">03 / INTEGRAÇÃO</p>
           <h1>Dados em<br /><span>jogo.</span></h1>
-          <p>Uma chamada real à JSONPlaceholder demonstra o carregamento de conteúdo externo com React.</p>
+          <p>Consulte resumos sobre os jogos da seleção, carregados da Wikipedia em português.</p>
         </div>
-        <div className="api-caption"><span className="api-dot" /> JSONPLACEHOLDER · POSTS DE DEMONSTRAÇÃO <span>GET /posts?_limit=6</span></div>
-        {status === 'loading' && <p className="state-message">Carregando publicações da API...</p>}
+        <div className="api-caption"><span className="api-dot" /> WIKIPEDIA · RESUMOS DOS JOGOS <span>GET /w/api.php</span></div>
+        {status === 'loading' && <p className="state-message" role="status">Carregando informações dos jogos...</p>}
         {status === 'error' && <p className="state-message state-error" role="alert">Falha ao carregar: {error}</p>}
         {status === 'ready' && (
           <>
-            <p className="api-disclaimer">Estes textos são dados de exemplo da API e não são análises ou informações oficiais sobre os jogos.</p>
-            <div className="post-grid">
-              {posts.map((post) => (
-                <article className="post-card" key={post.id}>
-                  <span>POST / {String(post.id).padStart(2, '0')}</span>
-                  <h2>{post.title}</h2>
-                  <p>{post.body}</p>
-                </article>
-              ))}
-            </div>
+            <p className="api-disclaimer">Os resumos são fornecidos pela Wikipedia e podem ser atualizados por seus colaboradores. Consulte a fonte para mais detalhes.</p>
+            {summaries.length > 0
+              ? (
+                <div className="post-grid">
+                  {summaries.map((summary, index) => (
+                    <article className="post-card" key={summary.id}>
+                      <span>{String(index + 1).padStart(2, '0')} / {summary.gameTitle}</span>
+                      <h2>{summary.title}</h2>
+                      <p>{summary.extract}</p>
+                      <a href={`https://pt.wikipedia.org/?curid=${summary.pageId}`} target="_blank" rel="noreferrer">
+                        Fonte: {summary.sourceTitle} ↗
+                      </a>
+                    </article>
+                  ))}
+                </div>
+              )
+              : <p className="empty-state">A API não encontrou informações para os jogos desta seleção.</p>}
           </>
         )}
       </main>
